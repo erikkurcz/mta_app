@@ -1,51 +1,61 @@
-// Web access via libcurl for pinging NYC MTA site for data
+// Main for running this application 
 
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <unistd.h>
-#include <iostream>
-#include <map>
 
-#include <curl/curl.h>
-#include "protobufs/nyct-subway.pb.h"
-#include "protobufs/gtfs-realtime.pb.h"
-#include "utils/utils.cc"
-#include <google/protobuf/util/json_util.h>
+struct cli_args {
+	std::string station;
+	std::string direction;
+	std::string route;	
+};
 
-std::string GTFS_PATH = "data/gtfs";
-
-// Parse file into protobuf objects
-bool parse_file(void)
+static void show_usage(void)
 {
-	NyctTripDescriptor subway_data;
-
-	// Parse file of gtfs data in order to work with protobuf 
-	std::fstream gtfs(GTFS_PATH, std::ios::in | std::ios::binary);
-
-	if (!gtfs)
-	{
-		std::cerr << "Error opening GTFS data: " << strerror(errno) << std::endl;
-		return false;
-	}
-	else if (!subway_data.ParseFromIstream(&gtfs))
-	{
-		std::cerr << "Error parsing GTFS data" << std::endl;
-		return false;
-	}
-	
-	// good to go from here
-	std::string json;
-	google::protobuf::util::MessageToJsonString(subway_data, &json);
-	std::cout << json << std::endl;
-	return true;	
-
+	std::cerr << "Usage:\nmta -s|--station []\n"
+		  << "-d|--direction [north|south]\n"
+		  << "-r|--route [1|2|3|4|5|6|7|S|A|C|E|B|D|F|M|J|Z|G ... \n"
+		  << std::endl; 
 }
 
-int main(void)
+int main(int argc, char* argv[])
 {
-	bool status = parse_file();	
-	std::string strstatus = status ? "YAY!" : "NAWWWWWWW";
-	std::cout << "Parsing status: " << strstatus << std::endl;
+	cli_args args;
+	
+	// sanity check	
+	if (argc <= 1)
+	{
+		show_usage();
+		return 1; 
+	}
+	
+	// parse out	
+	int c;	
+	while( (c = getopt(argc, argv, "s:d:r:")) != -1 )
+	{
+		switch (c)
+		{
+			case 's':
+				args.station = optarg;
+				break;
+			case 'd':
+				args.direction = optarg;
+				break;
+			case 'r':
+				args.route = optarg;
+				break;
+		}
+	}
+
+	std::cout << "Arguments given:"
+		  << "\nStation: " << args.station
+		  << "\nDirection: " << args.direction
+		  << "\nRoute: " << args.route
+		  << std::endl;
+
+	// parse file here
 	return 0;
 }
 
